@@ -21,6 +21,20 @@ export async function POST(req: NextRequest) {
     const yData = await yRes.json();
 
     const fact = yData.fact || {};
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+
+    const formattedDate = `${year}-${month}-${day}`;
+    console.log(formattedDate);
+
+    const dateMoscow = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+    const yearMoscow = dateMoscow.getUTCFullYear();
+    const monthMoscow = String(dateMoscow.getUTCMonth() + 1).padStart(2, "0");
+    const dayMoscow = String(dateMoscow.getUTCDate()).padStart(2, "0");
+
+    const formattedDateMoscow = `${yearMoscow}-${monthMoscow}-${dayMoscow}`;
 
     const weatherPrompt = `
     Сделай красивый прогноз погоды на основе этих данных:
@@ -29,7 +43,7 @@ export async function POST(req: NextRequest) {
     💨 Ветер: ${fact.wind_speed} м/с
     💧 Влажность: ${fact.humidity}%
     📊 Давление: ${fact.pressure_mm} мм рт.ст.
-
+дата составления прогноза: ${formattedDateMoscow}
     Оформи красиво, с эмодзи и кратко, чтобы это можно было вывести в компонент как текст.
     Добавь рекомендации для человека по нахождению на открытом воздухе.
     .
