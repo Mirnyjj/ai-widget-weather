@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// Функция для преобразования Кельвинов в Цельсии
+function kelvinToCelsius(kelvin: number): number {
+  return Math.round(kelvin - 273.15);
+}
+
+// Функция для перевода давления из гПа в мм рт.ст.
+function hPaToMmHg(hPa: number): number {
+  return Math.round(hPa * 0.750062);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { lat, lon } = await req.json();
@@ -10,17 +20,16 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
 
-    const YANDEX_KEY = process.env.YANDEX_WEATHER_KEY!;
-    const yUrl = `https://api.weather.yandex.ru/v2/informers?lat=${lat}&lon=${lon}&lang=ru_RU`;
+    const OPENWEATHER_KEY = process.env.OPENWEATHER_API_KEY!;
 
-    const yRes = await fetch(yUrl, {
-      headers: { "X-Yandex-Weather-Key": YANDEX_KEY },
-    });
+    const yUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_KEY}`;
 
-    if (!yRes.ok) throw new Error(`Яндекс API ошибка: ${yRes.status}`);
+    const yRes = await fetch(yUrl);
+
+    if (!yRes.ok) throw new Error(`OPENWEATHER API ошибка: ${yRes.status}`);
     const yData = await yRes.json();
-
-    const fact = yData.fact || {};
+    console.log(yData);
+    const fact = yData.main || {};
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, "0");
@@ -39,10 +48,10 @@ export async function POST(req: NextRequest) {
     const weatherPrompt = `
     Сделай красивый прогноз погоды на основе этих данных:
     Текущая погода: Состояние: ${fact.condition}
-    🌡️ Температура: ${fact.temp}°C
-    💨 Ветер: ${fact.wind_speed} м/с
-    💧 Влажность: ${fact.humidity}%
-    📊 Давление: ${fact.pressure_mm} мм рт.ст.
+    🌡️ Температура: ${kelvinToCelsius(fact.temp)}°C
+    💨 Ветер: ${yData.wind.speed} м/с
+    💧 Влажность: ${hPaToMmHg(fact.humidity)}%
+    📊 Давление: ${fact.pressure} мм рт.ст.
 дата составления прогноза: ${formattedDateMoscow}
     Оформи красиво, с эмодзи и кратко, чтобы это можно было вывести в компонент как текст.
     Добавь рекомендации для человека по нахождению на открытом воздухе.
@@ -83,7 +92,8 @@ export async function POST(req: NextRequest) {
 
     const data = await response.json();
     const text =
-      data?.choices?.[0]?.message?.content || "Нет ответа от DeepSeek";
+      data?.choices?.[0]?.message?.content ||
+      "Сервер временно не доступен, попробуйте повторить позднее";
     return NextResponse.json(text);
   } catch (e) {
     console.error(e);

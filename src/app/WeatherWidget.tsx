@@ -146,7 +146,7 @@ export default function WeatherWidget() {
           type="text"
           value={city}
           onChange={handleCityChange}
-          placeholder="Введите город России..."
+          placeholder="Введите название города..."
           className="w-full p-3 rounded-md border bg-white border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
         />
 
