@@ -1,6 +1,12 @@
 "use client";
 
-import { useActionState, useState, useEffect, useRef } from "react";
+import {
+  useActionState,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import { weatherAction } from "./weatherAction";
 
 const initialState = {
@@ -98,26 +104,31 @@ export default function WeatherWidget() {
     fetchCoordinatesForCity(suggestion.split(",")[0]); // Берем только название города
   };
 
+  const typeText = useCallback((text: string) => {
+    setDisplayedText(" ");
+    setIsTyping(true);
+
+    let index = 0;
+    const intervalId = setInterval(() => {
+      if (index < text.length) {
+        setDisplayedText((prev) => prev + text.charAt(index));
+        index++;
+      } else {
+        clearInterval(intervalId);
+        setIsTyping(false);
+      }
+    }, 20);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
   useEffect(() => {
     if (state.text && state.text !== textRef.current) {
       textRef.current = state.text;
-      setDisplayedText("");
-      setIsTyping(true);
-
-      let i = 0;
-      const typingInterval = setInterval(() => {
-        if (state.text && i < state.text.length) {
-          setDisplayedText((prev) => prev + state.text?.charAt(i));
-          i++;
-        } else {
-          clearInterval(typingInterval);
-          setIsTyping(false);
-        }
-      }, 20); // Скорость печати (20ms на символ)
-
-      return () => clearInterval(typingInterval);
+      const cleanup = typeText(" " + state.text);
+      return cleanup;
     }
-  }, [state.text]);
+  }, [state.text, typeText]);
 
   // Закрытие подсказок при клике вне области
   useEffect(() => {
