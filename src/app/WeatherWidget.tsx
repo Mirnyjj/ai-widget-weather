@@ -28,6 +28,9 @@ export default function WeatherWidget() {
     lon: string;
   } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const [displayedText, setDisplayedText] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const textRef = useRef("");
 
   // Получение подсказок городов
   const fetchCitySuggestions = async (input: string) => {
@@ -95,6 +98,27 @@ export default function WeatherWidget() {
     fetchCoordinatesForCity(suggestion.split(",")[0]); // Берем только название города
   };
 
+  useEffect(() => {
+    if (state.text && state.text !== textRef.current) {
+      textRef.current = state.text;
+      setDisplayedText("");
+      setIsTyping(true);
+
+      let i = 0;
+      const typingInterval = setInterval(() => {
+        if (state.text && i < state.text.length) {
+          setDisplayedText((prev) => prev + state.text?.charAt(i));
+          i++;
+        } else {
+          clearInterval(typingInterval);
+          setIsTyping(false);
+        }
+      }, 20); // Скорость печати (20ms на символ)
+
+      return () => clearInterval(typingInterval);
+    }
+  }, [state.text]);
+
   // Закрытие подсказок при клике вне области
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -112,7 +136,7 @@ export default function WeatherWidget() {
 
   return (
     <div
-      className="mx-auto mt-8 p-6 bg-white rounded-xl shadow-md font-sans max-w-md"
+      className="mx-auto mt-8 p-6 bg-emerald-100 rounded-xl shadow-md font-sans max-w-md"
       ref={wrapperRef}
     >
       <h2 className="text-center text-2xl font-semibold mb-4">🌤️ AI Weather</h2>
@@ -123,7 +147,7 @@ export default function WeatherWidget() {
           value={city}
           onChange={handleCityChange}
           placeholder="Введите город России..."
-          className="w-full p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="w-full p-3 rounded-md border bg-white border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
         />
 
         {showSuggestions && suggestions.length > 0 && (
@@ -166,10 +190,15 @@ export default function WeatherWidget() {
       )}
 
       {state.text && (
-        <div className="mt-4 p-4 bg-gray-100 rounded-md">
-          <h3 className="font-semibold mb-2">Прогноз погоды:</h3>
+        <div className="mt-4 p-4 bg-gray-100 rounded-md relative">
+          <h3 className="font-semibold mb-2 flex items-center gap-2">
+            Прогноз погоды:
+            {isTyping && (
+              <span className="inline-block w-2 h-4 bg-blue-500 animate-pulse"></span>
+            )}
+          </h3>
           <pre className="whitespace-pre-wrap text-gray-800 text-sm">
-            {state.text}
+            {displayedText}
           </pre>
         </div>
       )}
